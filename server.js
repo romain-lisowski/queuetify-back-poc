@@ -1,12 +1,15 @@
 "use strict";
 
 const express = require("express");
+const helmet = require("helmet");
 const socketIO = require("socket.io");
 
 const PORT = process.env.PORT || 3000;
 
-const server = express().listen(PORT, () => console.log(`Listening on ${PORT}`));
+const app = express();
+app.use(helmet);
 
+const server = app.listen(PORT, () => console.log(`Listening on ${PORT}`));
 const io = socketIO(server);
 
 // eslint-disable-next-line no-unused-vars
