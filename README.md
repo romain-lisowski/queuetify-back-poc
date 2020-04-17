@@ -4,4 +4,6 @@ queue-server
 ```
 npm install
 npm start
+
+add ./serviceAccountKey.json
 ```
