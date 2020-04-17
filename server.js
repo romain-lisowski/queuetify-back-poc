@@ -1,4 +1,6 @@
 const express = require("express");
+const helmet = require("helmet");
+const cors = require("cors");
 const socketIO = require("socket.io");
 const { DateTime } = require("luxon");
 const { firebase } = require("@firebase/app");
@@ -8,11 +10,8 @@ require('dotenv').config()
 // server
 const PORT = process.env.PORT || 3000;
 const app = express();
-app.use(function (req, res, next) {
-  res.header("Access-Control-Allow-Origin", process.env.CLIENT_URL);
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  next();
-});
+app.use(helmet);
+app.use(cors);
 const server = app.listen(PORT, () => console.log(`Listening on ${PORT}`));
 
 // firebase
