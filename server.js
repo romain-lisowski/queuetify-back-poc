@@ -1,8 +1,10 @@
 const express = require("express");
 const helmet = require("helmet");
 const socketIO = require("socket.io");
-const admin = require("firebase-admin");
-var { DateTime } = require('luxon');
+const { DateTime } = require("luxon");
+const { firebase } = require("@firebase/app");
+require("@firebase/firestore");
+require('dotenv').config()
 
 // server
 const PORT = process.env.PORT || 3000;
@@ -11,12 +13,18 @@ app.use(helmet);
 const server = app.listen(PORT, () => console.log(`Listening on ${PORT}`));
 
 // firebase
-const serviceAccount = require("./serviceAccountKey.json");
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://queue-1befa.firebaseio.com"
+const firebaseApp = firebase.initializeApp({
+  apiKey: process.env.FIREBASE_APIKEY,
+  authDomain: process.env.FIREBASE_AUTHDOMAIN,
+  databaseURL: process.env.FIREBASE_DATABASEURL,
+  projectId: process.env.FIREBASE_PROJECTID,
+  storageBucket: process.env.FIREBASE_STORAGEBUCKET,
+  messagingSenderId: process.env.FIREBASE_MESSAGINGSENDERID,
+  appId: process.env.FIREBASE_APPID,
+  measurementId: process.env.FIREBASE_MEASUREMENTID
 });
-const db = admin.firestore();
+
+const db = firebaseApp.firestore();
 
 // socket IO
 const io = socketIO(server);
@@ -96,7 +104,7 @@ async function getNextTrack() {
     // add new current track and add played timestamp
     await db.collection("current_tracks").add({
       ...nextTrack,
-      played: admin.firestore.FieldValue.serverTimestamp()
+      played: firebase.firestore.FieldValue.serverTimestamp()
     }).then(async ref => {
       const snapshot = await ref.get();
       nextTrack = snapshot.data();

@@ -86,7 +86,3 @@ typings/
 
 # DynamoDB Local files
 .dynamodb/
-
-
-# Queue
-serviceAccountKey.json
