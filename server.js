@@ -50,7 +50,7 @@ async function checkState() {
     console.log(currentTrack);
   } else {
     // next track if current_track end
-    let endTrackDate = DateTime.fromSeconds(currentTrack.created.seconds + (currentTrack.duration / 1000));
+    let endTrackDate = DateTime.fromSeconds(currentTrack.played.seconds + (currentTrack.duration / 1000));
     if (DateTime.local().setZone("utc") >= endTrackDate) {
       currentTrack = null;
     }
@@ -90,11 +90,18 @@ async function getNextTrack() {
     await removeTrack(nextTrack);
   }
 
-  // update current track
+  // change current track
   await removeCurrentTrack();
   if (nextTrack) {
-    await db.collection("current_tracks").add({ ...nextTrack, created: admin.firestore.FieldValue.serverTimestamp() })
-    io.emit("NEXT_TRACK", nextTrack);
+    // add new current track and add played timestamp
+    await db.collection("current_tracks").add({
+      ...nextTrack,
+      played: admin.firestore.FieldValue.serverTimestamp()
+    }).then(async ref => {
+      const snapshot = await ref.get();
+      nextTrack = snapshot.data();
+      io.emit("NEXT_TRACK", nextTrack);
+    });
   }
 
   return nextTrack;
