@@ -80,41 +80,41 @@ async function getCurrentOrNextTrack() {
 
 // get track playing
 async function getCurrentTrack() {
+  let currentTrack = null;
   const querySnapshot = await db.collection("current_tracks").where("room", "==", "room1").limit(1).get();
   
   querySnapshot.forEach(doc => {
-    const track = doc.data();
-    return track;
+    currentTrack = doc.data();
   });
-  return null;
+  return currentTrack;
 }
 
 // remove current track and add one from queue if not empty
 async function getNextTrack() {
-  let nextTrack = null;
+  let track = null;
 
   // check if a track is queued
   const tracks = await getTracks();
   if (tracks.length > 0) {
-    nextTrack = tracks[0];
-    await removeTrack(nextTrack);
+    track = tracks[0];
+    await removeTrack(track);
   }
 
   // change current track
   await removeCurrentTrack();
-  if (nextTrack) {
+  if (track) {
     // add new current track and add played timestamp
     await db.collection("current_tracks").add({
-      ...nextTrack,
+      ...track,
       played: firebase.firestore.FieldValue.serverTimestamp()
     }).then(async ref => {
       const snapshot = await ref.get();
-      nextTrack = snapshot.data();
-      io.emit("NEXT_TRACK", nextTrack);
+      track = snapshot.data();
     });
+    io.emit("NEXT_TRACK");
   }
 
-  return nextTrack;
+  return track;
 }
 
 // get tracks queued
