@@ -37,11 +37,6 @@ io.on("connection", (socket) => {
     io.emit("DISCONNECTED", socket.id);
   });
 
-  socket.on("E_USER_CONNECTED", (data) => {
-    console.log(`E_USER_CONNECTED : ${socket.id}-${data}`);
-    io.emit("USER_CONNECTED", data);
-  });
-
   socket.on("E_VOTE_TRACK", () => {
     io.emit("VOTE_TRACK");
   });
@@ -53,16 +48,30 @@ io.on("connection", (socket) => {
 });
 
 // main
-let currentTrack = null; 
+let playingTrack = null;
 async function checkState() {
-  if (currentTrack === null) {
-    currentTrack = await getCurrentOrNextTrack();
-    console.log(currentTrack);
+  if (playingTrack === null) {
+    playingTrack = await getCurrentOrNextTrack();
+    if (playingTrack) {
+      console.log("> " + playingTrack.name);
+      io.emit("REFRESH");
+    }
   } else {
     // next track if current_track end
-    let endTrackDate = DateTime.fromSeconds(currentTrack.played.seconds + (currentTrack.duration / 1000));
-    if (DateTime.local().setZone("utc") >= endTrackDate) {
-      currentTrack = null;
+    let endTrackDate = DateTime.fromSeconds(playingTrack.played.seconds + (playingTrack.duration / 1000));
+    let now = DateTime.local().setZone("utc");
+    console.log(
+      playingTrack.name + " - " +
+      now.c.hour + ":" +
+      now.c.minute + ":" +
+      now.c.second + "|" +
+      endTrackDate.c.hour + ":" +
+      endTrackDate.c.minute + ":" +
+      endTrackDate.c.second
+    );
+    if (now >= endTrackDate) {
+      playingTrack = null;
+      io.emit("REFRESH");
     }
   }
   setTimeout(checkState, 2000);
@@ -72,21 +81,27 @@ setTimeout(checkState, 2000);
 // get track or go to next track
 async function getCurrentOrNextTrack() {
   let track = await getCurrentTrack();
+  
   if (track === null) {
     track = await getNextTrack();
-  } 
+  } else {
+    let endTrackDate = DateTime.fromSeconds(track.played.seconds + (track.duration / 1000));
+    let now = DateTime.local().setZone("utc");
+    if (now >= endTrackDate) {
+      track = await getNextTrack();
+    }
+  }
   return track;
 }
 
 // get track playing
 async function getCurrentTrack() {
-  let currentTrack = null;
+  let track = null;
   const querySnapshot = await db.collection("current_tracks").where("room", "==", "room1").limit(1).get();
-  
   querySnapshot.forEach(doc => {
-    currentTrack = doc.data();
+    track = doc.data();
   });
-  return currentTrack;
+  return track;
 }
 
 // remove current track and add one from queue if not empty
@@ -111,7 +126,6 @@ async function getNextTrack() {
       const snapshot = await ref.get();
       track = snapshot.data();
     });
-    io.emit("NEXT_TRACK");
   }
 
   return track;
@@ -132,7 +146,6 @@ async function removeCurrentTrack() {
   const querySnapshot = await db.collection("current_tracks").where("room", "==", "room1").get();  
   querySnapshot.forEach(doc => {
     doc.ref.delete();
-    io.emit("NEXT_TRACK");
   });
 }
 
