@@ -21,25 +21,32 @@ app.use(function (req, res, next) {
   next();
 });
 
+// Get rooms
+app.get("/rooms", async (req, res, next) => {
+  const rooms = await firebase.getRooms();
+  res.json(rooms);
+  next();
+});
+
 // Get current track
-app.get("/current_track", async (req, res, next) => {
-  const track = await firebase.getCurrentTrack();
+app.get("/current_track/:room", async (req, res, next) => {
+  const track = await firebase.getCurrentTrack(req.params.room);
   res.json(track);
   next();
 });
 
 // Get tracks
-app.get("/tracks", async (req, res, next) => {
-  const tracks = await firebase.getTracks();
+app.get("/tracks/:room", async (req, res, next) => {
+  const tracks = await firebase.getTracks(req.params.room);
   res.json(tracks);
   next();
 });
 
 // Add track
-app.post("/tracks", async (req, res, next) => {
+app.post("/tracks/:room", async (req, res, next) => {
   const io = req.app.get("socketio");
   const track = req.body.track;
-  await firebase.addTrack(track);
+  await firebase.addTrack(req.params.room, track);
 
   res.json("Track added");
   io.emit("REFRESH_TRACKS");
@@ -47,10 +54,10 @@ app.post("/tracks", async (req, res, next) => {
 });
 
 // remove track
-app.delete("/tracks", async (req, res, next) => {
+app.delete("/tracks/:room", async (req, res, next) => {
   const io = req.app.get("socketio");
   const track = req.body.track;
-  await firebase.removeTrack(track);
+  await firebase.removeTrack(req.params.room, track);
 
   res.json("User removed");
   io.emit("REFRESH_TRACKS");
@@ -58,12 +65,12 @@ app.delete("/tracks", async (req, res, next) => {
 });
 
 // vote track
-app.post("/tracks/vote", async (req, res, next) => {
+app.post("/tracks/vote/:room", async (req, res, next) => {
   const io = req.app.get("socketio");
   const track = req.body.track;
   const increment = req.body.increment;
   const spotifyUser = req.body.spotifyUser;
-  await firebase.voteTrack(track, increment, spotifyUser);
+  await firebase.voteTrack(req.params.room, track, increment, spotifyUser);
 
   res.json("Track voted");
   io.emit("REFRESH_TRACKS");
@@ -71,17 +78,17 @@ app.post("/tracks/vote", async (req, res, next) => {
 });
 
 // users
-app.get("/users", async (req, res, next) => {
-  const users = await firebase.getUsers();
+app.get("/users/:room", async (req, res, next) => {
+  const users = await firebase.getUsers(req.params.room);
   res.json(users);
   next();
 });
 
 // add user
-app.post("/users", async (req, res, next) => {
+app.post("/users/:room", async (req, res, next) => {
   const io = req.app.get("socketio");
   const user = req.body.user;
-  await firebase.addUser(user);
+  await firebase.addUser(req.params.room, user);
 
   res.json("User added");
   io.emit("REFRESH_USERS");
@@ -89,10 +96,10 @@ app.post("/users", async (req, res, next) => {
 });
 
 // remove user
-app.delete("/users", async (req, res, next) => {
+app.delete("/users/:room", async (req, res, next) => {
   const io = req.app.get("socketio");
   const user = req.body.user;
-  await firebase.removeUser(user);
+  await firebase.removeUser(req.params.room, user);
 
   res.json("User removed");
   io.emit("REFRESH_USERS");

@@ -18,25 +18,25 @@ const firebaseApp = firebase.initializeApp({
 const db = firebaseApp.firestore();
 
 // get track or go to next track
-async function getCurrentOrNextTrack() {
-  let track = await getCurrentTrack();
+async function getCurrentOrNextTrack(roomName) {
+  let track = await getCurrentTrack(roomName);
 
   if (track === null) {
-    track = await getNextTrack();
+    track = await getNextTrack(roomName);
   } else {
     let endTrackDate = DateTime.fromSeconds(track.played.seconds + (track.duration / 1000));
     let now = DateTime.local().setZone("utc");
     if (now >= endTrackDate) {
-      track = await getNextTrack();
+      track = await getNextTrack(roomName);
     }
   }
   return track;
 }
 
 // get track playing
-async function getCurrentTrack() {
+async function getCurrentTrack(roomName) {
   let track = null;
-  const querySnapshot = await db.collection("current_tracks").where("room", "==", "room1").limit(1).get();
+  const querySnapshot = await db.collection("current_tracks").where("room", "==", roomName).limit(1).get();
   querySnapshot.forEach(doc => {
     track = doc.data();
   });
@@ -44,26 +44,26 @@ async function getCurrentTrack() {
 }
 
 // remove current track
-async function removeCurrentTrack() {
-  const querySnapshot = await db.collection("current_tracks").where("room", "==", "room1").get();
+async function removeCurrentTrack(roomName) {
+  const querySnapshot = await db.collection("current_tracks").where("room", "==", roomName).get();
   querySnapshot.forEach(doc => {
     doc.ref.delete();
   });
 }
 
 // remove current track and add one from queue if not empty
-async function getNextTrack() {
+async function getNextTrack(roomName) {
   let track = null;
 
   // check if a track is queued
-  const tracks = await getTracks();
+  const tracks = await getTracks(roomName);
   if (tracks.length > 0) {
     track = tracks[0];
-    await removeTrack(track);
+    await removeTrack(roomName, track);
   }
 
   // change current track
-  await removeCurrentTrack();
+  await removeCurrentTrack(roomName);
   if (track) {
     // add new current track and add played timestamp
     await db.collection("current_tracks").add({
@@ -78,35 +78,48 @@ async function getNextTrack() {
   return track;
 }
 
+// get rooms available
+async function getRooms() {
+  const rooms = [];
+  const querySnapshot = await db.collection("rooms").orderBy("name", "asc").orderBy("created", "asc").get();
+  querySnapshot.forEach(doc => {
+    rooms.push(doc.data());
+  });
+  return rooms;
+}
+
 // get tracks queued
-async function getTracks() {
+async function getTracks(roomName) {
   const tracks = [];
-  const querySnapshot = await db.collection("tracks").where("room", "==", "room1").orderBy("vote", "desc").orderBy("created", "asc").get();
+  const querySnapshot = await db.collection("tracks").where("room", "==", roomName).orderBy("vote", "desc").orderBy("created", "asc").get();
   querySnapshot.forEach(doc => {
     tracks.push(doc.data());
   });
   return tracks;
 }
 
-// remove track from queue
-async function removeTrack(track) {
-  const querySnapshot = await db.collection("tracks").where("room", "==", "room1").where("id", "==", track.id).get();
+// add track to queue
+async function addTrack(roomName, track) {
+  await db.collection("tracks").add({
+    ...track,
+    room: roomName,
+    created: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+// remove track
+async function removeTrack(roomName, track) {
+  const querySnapshot = await db.collection("tracks").where("room", "==", roomName).where("id", "==", track.id).get();
   querySnapshot.forEach(doc => {
     doc.ref.delete();
   });
 }
 
-async function addTrack(track) {
-  await db.collection("tracks").add({
-    ...track,
-    created: firebase.firestore.FieldValue.serverTimestamp()
-  });
-}
-
-async function voteTrack(track, increment, spotifyUser) {
+// vote for a track
+async function voteTrack(roomName, track, increment, spotifyUser) {
   const querySnapshot = await db
     .collection("tracks")
-    .where("room", "==", "room1")
+    .where("room", "==", roomName)
     .where("id", "==", track.id)
     .get();
 
@@ -121,11 +134,12 @@ async function voteTrack(track, increment, spotifyUser) {
   });
 }
 
-async function getUsers() {
+// get users of a room
+async function getUsers(roomName) {
   const users = [];
   const querySnapshot = await db
     .collection("users")
-    .where("room", "==", "room1")
+    .where("room", "==", roomName)
     .get();
 
   querySnapshot.forEach(doc => {
@@ -135,23 +149,22 @@ async function getUsers() {
   return users;
 }
 
-async function addUser(user) {
+// add user in a room
+async function addUser(roomName, user) {
   await db
     .collection("users")
     .doc(user.spotify_id)
     .set({
-      room: "room1",
-      spotify_id: user.spotify_id,
-      name: user.name,
-      spotify_url: user.spotify_url,
-      image: user.image
+      ...user,
+      room: roomName
     });
 }
 
-async function removeUser(user) {
+// remove user from room
+async function removeUser(roomName, user) {
   const querySnapshot = await db
     .collection("users")
-    .where("room", "==", "room1")
+    .where("room", "==", roomName)
     .where("spotify_id", "==", user.spotify_id)
     .get();
   querySnapshot.forEach(doc => {
@@ -160,6 +173,7 @@ async function removeUser(user) {
 }
 
 module.exports = {
+  getRooms,
   getCurrentOrNextTrack,
   getCurrentTrack,
   getTracks,

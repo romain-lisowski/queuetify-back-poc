@@ -19,11 +19,11 @@ io.on("connection", (socket) => {
 
 app.set("socketio", io);
 
-// main
 let playingTrack = null;
+const roomName = "Room1";
 async function run() {
   if (playingTrack === null) {
-    playingTrack = await firebase.getCurrentOrNextTrack();
+    playingTrack = await firebase.getCurrentOrNextTrack(roomName);
     if (playingTrack) {
       console.log("> " + playingTrack.name);
       io.emit("REFRESH_CURRENT_TRACK");
