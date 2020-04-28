@@ -1,5 +1,5 @@
 require("@firebase/firestore");
-require('dotenv').config()
+require("dotenv").config();
 const { DateTime } = require("luxon");
 const { firebase } = require("@firebase/app");
 
@@ -90,7 +90,7 @@ async function getTracks() {
 
 // remove track from queue
 async function removeTrack(track) {
-  const querySnapshot = await db.collection("tracks").where("room", "==", "room1").where("id", "==", track.id).get()
+  const querySnapshot = await db.collection("tracks").where("room", "==", "room1").where("id", "==", track.id).get();
   querySnapshot.forEach(doc => {
     doc.ref.delete();
   });
@@ -168,4 +168,4 @@ module.exports = {
   getUsers,
   addUser,
   removeUser
-}
+};

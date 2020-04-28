@@ -17,7 +17,7 @@ io.on("connection", (socket) => {
   });
 });
 
-app.set('socketio', io);
+app.set("socketio", io);
 
 // main
 let playingTrack = null;
@@ -50,19 +50,3 @@ async function run() {
   setTimeout(run, 2000);
 }
 setTimeout(run, 2000);
-
-// Init
-// getCurrentTrack from db
-// getTracks from db
-
-// if currentTrack null
-
-// if currentTrack ends
-// check tracks
-// remove track
-// remove current track
-// add current track
-// refresh
-
-// if add track or vote 
-// getTracks

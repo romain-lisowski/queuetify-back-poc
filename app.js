@@ -5,7 +5,7 @@ const firebase = require("./firebase");
 
 // init app
 const app = express();
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 app.use(helmet());
 app.use(express.json());
 app.use(bodyParser.json());
@@ -22,33 +22,33 @@ app.use(function (req, res, next) {
 });
 
 // Get current track
-app.get('/current_track', async (req, res, next) => {
+app.get("/current_track", async (req, res, next) => {
   const track = await firebase.getCurrentTrack();
   res.json(track);
   next();
-})
+});
 
 // Get tracks
-app.get('/tracks', async (req, res, next) => {
+app.get("/tracks", async (req, res, next) => {
   const tracks = await firebase.getTracks();
   res.json(tracks);
   next();
-})
+});
 
 // Add track
-app.post('/tracks', async (req, res, next) => {
-  const io = req.app.get('socketio');
+app.post("/tracks", async (req, res, next) => {
+  const io = req.app.get("socketio");
   const track = req.body.track;
   await firebase.addTrack(track);
 
   res.json("Track added");
   io.emit("REFRESH_TRACKS");
   next();
-})
+});
 
 // vote track
-app.post('/tracks/vote', async (req, res, next) => {
-  const io = req.app.get('socketio');
+app.post("/tracks/vote", async (req, res, next) => {
+  const io = req.app.get("socketio");
   const track = req.body.track;
   const increment = req.body.increment;
   const spotifyUser = req.body.spotifyUser;
@@ -57,29 +57,29 @@ app.post('/tracks/vote', async (req, res, next) => {
   res.json("Track voted");
   io.emit("REFRESH_TRACKS");
   next();
-})
+});
 
 // users
-app.get('/users', async (req, res, next) => {
+app.get("/users", async (req, res, next) => {
   const users = await firebase.getUsers();
   res.json(users);
   next();
-})
+});
 
 // add user
-app.post('/users', async (req, res, next) => {
-  const io = req.app.get('socketio');
+app.post("/users", async (req, res, next) => {
+  const io = req.app.get("socketio");
   const user = req.body.user;
   await firebase.addUser(user);
 
   res.json("User added");
   io.emit("REFRESH_USERS");
   next();
-})
+});
 
 // remove user
-app.delete('/users', async (req, res, next) => {
-  const io = req.app.get('socketio');
+app.delete("/users", async (req, res, next) => {
+  const io = req.app.get("socketio");
   const user = req.body.user;
   await firebase.removeUser(user);
 
