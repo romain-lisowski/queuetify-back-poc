@@ -164,6 +164,7 @@ module.exports = {
   getCurrentTrack,
   getTracks,
   addTrack,
+  removeTrack,
   voteTrack,
   getUsers,
   addUser,

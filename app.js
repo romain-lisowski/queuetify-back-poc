@@ -46,6 +46,17 @@ app.post("/tracks", async (req, res, next) => {
   next();
 });
 
+// remove track
+app.delete("/tracks", async (req, res, next) => {
+  const io = req.app.get("socketio");
+  const track = req.body.track;
+  await firebase.removeTrack(track);
+
+  res.json("User removed");
+  io.emit("REFRESH_TRACKS");
+  next();
+});
+
 // vote track
 app.post("/tracks/vote", async (req, res, next) => {
   const io = req.app.get("socketio");
