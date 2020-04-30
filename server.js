@@ -10,7 +10,15 @@ const server = app.listen(PORT, () => console.log(`Listening on ${PORT}`));
 // socket IO
 const io = socketIO(server);
 io.on("connection", (socket) => {
+
   io.emit("CONNECTED", socket.id);
+
+  socket.on("LEAVE", roomName => {
+    socket.leave(roomName);
+  });
+  socket.on("JOIN", roomName => {
+    socket.join(roomName);
+  });
 
   socket.on("disconnect", () => {
     io.emit("DISCONNECTED", socket.id);
@@ -19,34 +27,29 @@ io.on("connection", (socket) => {
 
 app.set("socketio", io);
 
-let playingTrack = null;
-const roomName = "Room1";
+let playingTracks = {
+  "Room1": null,
+};
+
 async function run() {
-  if (playingTrack === null) {
-    playingTrack = await firebase.getCurrentOrNextTrack(roomName);
-    if (playingTrack) {
-      console.log("> " + playingTrack.name);
-      io.emit("REFRESH_CURRENT_TRACK");
-      io.emit("REFRESH_TRACKS");
+  for (let roomName in playingTracks) {
+    if (playingTracks[roomName] === null) {
+      playingTracks[roomName] = await firebase.getCurrentOrNextTrack(roomName);
+      if (playingTracks[roomName]) {
+        io.to(roomName).emit("REFRESH_CURRENT_TRACK");
+        io.to(roomName).emit("REFRESH_TRACKS");
+      }
+    } else {
+      // next track if current_track end
+      let endTrackDate = DateTime.fromSeconds(playingTracks[roomName].played.seconds + (playingTracks[roomName].duration / 1000));
+      let now = DateTime.local().setZone("utc");
+      if (now >= endTrackDate) {
+        playingTracks[roomName] = null;
+        io.to(roomName).emit("REFRESH_CURRENT_TRACK");
+        io.to(roomName).emit("REFRESH_TRACKS");
+      }
     }
-    console.log(".");
-  } else {
-    // next track if current_track end
-    let endTrackDate = DateTime.fromSeconds(playingTrack.played.seconds + (playingTrack.duration / 1000));
-    let now = DateTime.local().setZone("utc");
-    console.log(
-      playingTrack.name + " - " +
-      now.c.minute + ":" +
-      now.c.second + "|" +
-      endTrackDate.c.minute + ":" +
-      endTrackDate.c.second
-    );
-    if (now >= endTrackDate) {
-      playingTrack = null;
-      io.emit("REFRESH_CURRENT_TRACK");
-      io.emit("REFRESH_TRACKS");
-    }
+    setTimeout(run, 2000);
   }
-  setTimeout(run, 2000);
 }
 setTimeout(run, 2000);
