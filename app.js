@@ -49,7 +49,7 @@ app.post("/tracks/:room", async (req, res, next) => {
   await firebase.addTrack(req.params.room, track);
 
   res.json("Track added");
-  io.emit("REFRESH_TRACKS");
+  io.to(req.params.room).emit("REFRESH_TRACKS");
   next();
 });
 
@@ -60,7 +60,7 @@ app.delete("/tracks/:room", async (req, res, next) => {
   await firebase.removeTrack(req.params.room, track);
 
   res.json("User removed");
-  io.emit("REFRESH_TRACKS");
+  io.to(req.params.room).emit("REFRESH_TRACKS");
   next();
 });
 
@@ -73,7 +73,7 @@ app.post("/tracks/vote/:room", async (req, res, next) => {
   await firebase.voteTrack(req.params.room, track, increment, spotifyUser);
 
   res.json("Track voted");
-  io.emit("REFRESH_TRACKS");
+  io.to(req.params.room).emit("REFRESH_TRACKS");
   next();
 });
 
@@ -91,7 +91,7 @@ app.post("/users/:room", async (req, res, next) => {
   await firebase.addUser(req.params.room, user);
 
   res.json("User added");
-  io.emit("REFRESH_USERS");
+  io.to(req.params.room).emit("REFRESH_USERS");
   next();
 });
 
@@ -102,7 +102,7 @@ app.delete("/users/:room", async (req, res, next) => {
   await firebase.removeUser(req.params.room, user);
 
   res.json("User removed");
-  io.emit("REFRESH_USERS");
+  io.to(req.params.room).emit("REFRESH_USERS");
   next();
 });
 
