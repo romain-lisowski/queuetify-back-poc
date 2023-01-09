@@ -24,7 +24,7 @@
     "express": "^4.17.1",
     "firebase": "^7.14.1",
     "helmet": "^3.22.0",
-    "luxon": "^1.23.0",
+    "luxon": "^1.28.1",
     "socket.io": "^2.3.0"
   },
   "devDependencies": {
